@@ -555,6 +555,51 @@ canvas.sparkline {
 .panel:nth-child(7)  { animation-delay: 0.35s; }
 .panel:nth-child(8)  { animation-delay: 0.40s; }
 .panel:nth-child(9)  { animation-delay: 0.45s; }
+
+/* ── Trava de Arquitetura do Grid (Substitui .col-*) ────────────────────── */
+main#main-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: auto auto auto auto;
+  grid-template-areas:
+    "cpu  core mem"
+    "temp gpu  gpu"
+    "temp hist hist"
+    "temp disk net";
+  align-items: start;
+}
+
+/* Mapeamento explícito de cada painel para sua área na matriz */
+#panel-cpu-usage { grid-area: cpu; }
+#panel-cpu-cores { grid-area: core; }
+#panel-ram       { grid-area: mem; }
+#panel-cpu-temp  { grid-area: temp; }
+#panel-gpu       { grid-area: gpu; }
+#panel-gpu-chart { grid-area: hist; }
+#panel-disk      { grid-area: disk; }
+#panel-net       { grid-area: net; }
+
+/* Sobrescrita de responsividade para manter a legibilidade em telas menores */
+@media (max-width: 1200px) {
+  main#main-grid {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-areas:
+      "cpu  mem"
+      "core temp"
+      "gpu  gpu"
+      "hist hist"
+      "disk net";
+  }
+}
+
+@media (max-width: 800px) {
+  main#main-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "cpu" "core" "mem" "temp" "gpu" "hist" "disk" "net";
+  }
+}
+
 </style>
 </head>
 <body>
