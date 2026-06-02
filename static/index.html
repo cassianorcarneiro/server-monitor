@@ -153,26 +153,79 @@ header {
   padding: 3px 8px;
 }
 
-/* ── Main grid ────────────────────────────────────────────────────────────── */
-main {
+/* ── Main grid (Arquitetura de Áreas Determinísticas) ─────────────────────── */
+main#main-grid {
   padding: var(--gutter);
   display: grid;
   gap: var(--gutter);
-  grid-template-columns: repeat(12, 1fr);
-  align-content: start;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: max-content max-content max-content max-content;
+  align-items: stretch; /* Força todos os painéis da mesma linha a terem a mesma altura */
+  grid-template-areas:
+    "cpu  core mem"
+    "temp gpu  gpu"
+    "temp hist hist"
+    "temp disk net";
 }
 
-/* Responsive column helpers */
-.col-4  { grid-column: span 4; }
-.col-6  { grid-column: span 6; }
-.col-8  { grid-column: span 8; }
-.col-12 { grid-column: span 12; }
+/* Mapeamento explícito das áreas */
+#panel-cpu-usage { grid-area: cpu; }
+#panel-cpu-cores { grid-area: core; }
+#panel-ram       { grid-area: mem; }
+#panel-cpu-temp  { grid-area: temp; }
+#panel-gpu       { grid-area: gpu; }
+#panel-gpu-chart { grid-area: hist; }
+#panel-disk      { grid-area: disk; }
+#panel-net       { grid-area: net; }
 
+/* ── Panel / Card (Comportamento Flexível de Preenchimento) ───────────────── */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border2);
+  flex-shrink: 0; /* Impede que o cabeçalho seja esmagado */
+}
+
+.panel-body {
+  padding: 14px;
+  flex: 1; /* Força o corpo a empurrar os limites do contêiner para preencher o espaço restante */
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Sobrescrita de Responsividade ────────────────────────────────────────── */
 @media (max-width: 1200px) {
-  .col-4 { grid-column: span 6; }
+  main#main-grid {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-areas:
+      "cpu  mem"
+      "core temp"
+      "gpu  gpu"
+      "hist hist"
+      "disk net";
+  }
 }
+
 @media (max-width: 800px) {
-  .col-4, .col-6, .col-8 { grid-column: span 12; }
+  main#main-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "cpu" "core" "mem" "temp" "gpu" "hist" "disk" "net";
+  }
 }
 
 /* ── Panel / Card ─────────────────────────────────────────────────────────── */
