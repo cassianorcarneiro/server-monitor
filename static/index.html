@@ -153,14 +153,14 @@ header {
   padding: 3px 8px;
 }
 
-/* ── Main grid (Arquitetura de Áreas Determinísticas) ─────────────────────── */
+/* ── Main grid (Deterministic Area Architecture) ──────────────────────────── */
 main#main-grid {
   padding: var(--gutter);
   display: grid;
   gap: var(--gutter);
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: max-content max-content max-content max-content;
-  align-items: stretch; /* Força todos os painéis da mesma linha a terem a mesma altura */
+  align-items: stretch;
   grid-template-areas:
     "cpu  core mem"
     "temp gpu  gpu"
@@ -168,7 +168,7 @@ main#main-grid {
     "temp disk net";
 }
 
-/* Mapeamento explícito das áreas */
+/* Explicit area mapping */
 #panel-cpu-usage { grid-area: cpu; }
 #panel-cpu-cores { grid-area: core; }
 #panel-ram       { grid-area: mem; }
@@ -178,7 +178,7 @@ main#main-grid {
 #panel-disk      { grid-area: disk; }
 #panel-net       { grid-area: net; }
 
-/* ── Panel / Card (Comportamento Flexível de Preenchimento) ───────────────── */
+/* ── Panel / Card (Flexible Fill Behavior) ────────────────────────────────── */
 .panel {
   background: var(--panel);
   border: 1px solid var(--border);
@@ -189,6 +189,7 @@ main#main-grid {
   flex-direction: column;
   height: 100%;
   width: 100%;
+  animation: fadein 0.4s ease both;
 }
 
 .panel-header {
@@ -197,52 +198,7 @@ main#main-grid {
   justify-content: space-between;
   padding: 10px 14px;
   border-bottom: 1px solid var(--border2);
-  flex-shrink: 0; /* Impede que o cabeçalho seja esmagado */
-}
-
-.panel-body {
-  padding: 14px;
-  flex: 1; /* Força o corpo a empurrar os limites do contêiner para preencher o espaço restante */
-  display: flex;
-  flex-direction: column;
-}
-
-/* ── Sobrescrita de Responsividade ────────────────────────────────────────── */
-@media (max-width: 1200px) {
-  main#main-grid {
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-areas:
-      "cpu  mem"
-      "core temp"
-      "gpu  gpu"
-      "hist hist"
-      "disk net";
-  }
-}
-
-@media (max-width: 800px) {
-  main#main-grid {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "cpu" "core" "mem" "temp" "gpu" "hist" "disk" "net";
-  }
-}
-
-/* ── Panel / Card ─────────────────────────────────────────────────────────── */
-.panel {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
-  position: relative;
-}
-
-.panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border2);
+  flex-shrink: 0;
 }
 
 .panel-title {
@@ -268,7 +224,33 @@ main#main-grid {
 .panel-title.purple::before { background: var(--purple); }
 .panel-title.blue::before   { background: var(--blue); }
 
-.panel-body { padding: 14px; }
+.panel-body {
+  padding: 14px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Responsiveness Override ──────────────────────────────────────────────── */
+@media (max-width: 1200px) {
+  main#main-grid {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-areas:
+      "cpu  mem"
+      "core temp"
+      "gpu  gpu"
+      "hist hist"
+      "disk net";
+  }
+}
+
+@media (max-width: 800px) {
+  main#main-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "cpu" "core" "mem" "temp" "gpu" "hist" "disk" "net";
+  }
+}
 
 /* ── Big stat ─────────────────────────────────────────────────────────────── */
 .big-stat {
@@ -591,9 +573,6 @@ canvas.sparkline {
 }
 
 /* ── Animations ───────────────────────────────────────────────────────────── */
-.panel {
-  animation: fadein 0.4s ease both;
-}
 @keyframes fadein {
   from { opacity:0; transform: translateY(8px); }
   to   { opacity:1; transform: translateY(0); }
@@ -609,56 +588,11 @@ canvas.sparkline {
 .panel:nth-child(8)  { animation-delay: 0.40s; }
 .panel:nth-child(9)  { animation-delay: 0.45s; }
 
-/* ── Trava de Arquitetura do Grid (Substitui .col-*) ────────────────────── */
-main#main-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: auto auto auto auto;
-  grid-template-areas:
-    "cpu  core mem"
-    "temp gpu  gpu"
-    "temp hist hist"
-    "temp disk net";
-  align-items: start;
-}
-
-/* Mapeamento explícito de cada painel para sua área na matriz */
-#panel-cpu-usage { grid-area: cpu; }
-#panel-cpu-cores { grid-area: core; }
-#panel-ram       { grid-area: mem; }
-#panel-cpu-temp  { grid-area: temp; }
-#panel-gpu       { grid-area: gpu; }
-#panel-gpu-chart { grid-area: hist; }
-#panel-disk      { grid-area: disk; }
-#panel-net       { grid-area: net; }
-
-/* Sobrescrita de responsividade para manter a legibilidade em telas menores */
-@media (max-width: 1200px) {
-  main#main-grid {
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-areas:
-      "cpu  mem"
-      "core temp"
-      "gpu  gpu"
-      "hist hist"
-      "disk net";
-  }
-}
-
-@media (max-width: 800px) {
-  main#main-grid {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "cpu" "core" "mem" "temp" "gpu" "hist" "disk" "net";
-  }
-}
-
 </style>
 </head>
 <body>
 <div class="layout">
 
-<!-- ── Header ────────────────────────────────────────────────────────────── -->
 <header>
   <div class="header-left">
     <div class="logo">SYS<span>//</span>MONITOR</div>
@@ -676,11 +610,9 @@ main#main-grid {
   </div>
 </header>
 
-<!-- ── Main ──────────────────────────────────────────────────────────────── -->
 <main id="main-grid">
 
-  <!-- CPU Usage big stat + sparkline -->
-  <div class="panel col-4" id="panel-cpu-usage">
+  <div class="panel" id="panel-cpu-usage">
     <div class="panel-header">
       <div class="panel-title green">CPU Usage</div>
       <span id="cpu-freq" style="font-family:var(--font-mono);font-size:11px;color:var(--muted);">— MHz</span>
@@ -715,8 +647,7 @@ main#main-grid {
     </div>
   </div>
 
-  <!-- CPU per-core bars -->
-  <div class="panel col-4" id="panel-cpu-cores">
+  <div class="panel" id="panel-cpu-cores">
     <div class="panel-header">
       <div class="panel-title green">Per-Core Load</div>
     </div>
@@ -725,8 +656,7 @@ main#main-grid {
     </div>
   </div>
 
-  <!-- CPU Temperatures -->
-  <div class="panel col-4" id="panel-cpu-temp">
+  <div class="panel" id="panel-cpu-temp">
     <div class="panel-header">
       <div class="panel-title amber">Temperatures</div>
     </div>
@@ -735,8 +665,7 @@ main#main-grid {
     </div>
   </div>
 
-  <!-- Memory stat + sparkline -->
-  <div class="panel col-4" id="panel-ram">
+  <div class="panel" id="panel-ram">
     <div class="panel-header">
       <div class="panel-title cyan">Memory</div>
     </div>
@@ -766,8 +695,7 @@ main#main-grid {
     </div>
   </div>
 
-  <!-- GPU block — injected dynamically if GPU present -->
-  <div class="panel col-8" id="panel-gpu" style="display:none;">
+  <div class="panel" id="panel-gpu" style="display:none;">
     <div class="panel-header">
       <div class="panel-title purple">GPU</div>
       <span id="gpu-power" style="font-family:var(--font-mono);font-size:11px;color:var(--muted);">— W</span>
@@ -775,16 +703,14 @@ main#main-grid {
     <div class="panel-body" id="gpu-body">Loading...</div>
   </div>
 
-  <!-- Disk -->
-  <div class="panel col-4" id="panel-disk">
+  <div class="panel" id="panel-disk">
     <div class="panel-header">
       <div class="panel-title amber">Disks</div>
     </div>
     <div class="panel-body" id="disk-body">Loading...</div>
   </div>
 
-  <!-- Network -->
-  <div class="panel col-4" id="panel-net">
+  <div class="panel" id="panel-net">
     <div class="panel-header">
       <div class="panel-title blue">Network I/O</div>
     </div>
@@ -819,8 +745,7 @@ main#main-grid {
     </div>
   </div>
 
-  <!-- GPU Utilization chart (full width row) -->
-  <div class="panel col-8" id="panel-gpu-chart" style="display:none;">
+  <div class="panel" id="panel-gpu-chart" style="display:none;">
     <div class="panel-header">
       <div class="panel-title purple">GPU History</div>
       <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted);">last 5 min</span>
@@ -833,18 +758,17 @@ main#main-grid {
 </main>
 </div>
 
-<!-- Offline notice -->
 <div id="offline-banner">⚠ SERVER UNREACHABLE — RETRYING</div>
 
 <script>
 /* ═══════════════════════════════════════════════════════════════════════════
-   SYS//MONITOR — dashboard runtime
+   SYS//MONITOR — Dashboard Runtime
    ═══════════════════════════════════════════════════════════════════════════ */
 
 // ── Configuration ──────────────────────────────────────────────────────────
-const POLL_MS      = 5000;          // 5 s
-const HISTORY_MAX  = 60;            // keep 60 samples ≈ 5 min
-const API_BASE     = '';            // same origin; change to "http://IP:9090" if served separately
+const POLL_MS      = 5000;          // 5 seconds
+const HISTORY_MAX  = 60;            // Keep 60 samples ≈ 5 minutes
+const API_BASE     = '';            // Same origin; change to "http://IP:9090" if served separately
 const METRICS_URL  = `${API_BASE}/metrics`;
 
 // ── State ──────────────────────────────────────────────────────────────────
@@ -891,7 +815,7 @@ function barColor(p) {
   return 'bar-green';
 }
 
-// ── Canvas chart engine ────────────────────────────────────────────────────
+// ── Canvas Chart Engine ────────────────────────────────────────────────────
 function drawChart(canvas, datasets, opts = {}) {
   const dpr = window.devicePixelRatio || 1;
   const W = canvas.offsetWidth;
@@ -943,7 +867,7 @@ function drawChart(canvas, datasets, opts = {}) {
       ctx.fill();
     }
 
-    // Line
+    // Line stroke
     ctx.beginPath();
     ctx.strokeStyle = color;
     ctx.lineWidth = 1.5;
@@ -961,7 +885,7 @@ function drawChart(canvas, datasets, opts = {}) {
   });
 }
 
-// Redraw all charts on resize
+// Redraw all charts on window resize
 window.addEventListener('resize', redrawCharts);
 function redrawCharts() {
   drawChart($('chart-cpu'), [{
@@ -983,7 +907,7 @@ function redrawCharts() {
   }
 }
 
-// ── Render functions ───────────────────────────────────────────────────────
+// ── Render Functions ───────────────────────────────────────────────────────
 
 function renderCPU(cpu, load) {
   const pct = cpu.usage_percent ?? 0;
@@ -1059,7 +983,7 @@ function renderGPU(gpus) {
   $('panel-gpu').style.display       = '';
   $('panel-gpu-chart').style.display = '';
 
-  const g = gpus[0]; // primary GPU
+  const g = gpus[0]; // Primary GPU
   const body = $('gpu-body');
 
   const memPct = g.memory_total_mb ? Math.round((g.memory_used_mb / g.memory_total_mb) * 100) : 0;
@@ -1158,7 +1082,7 @@ function renderUptime(up) {
   $('uptime-badge').textContent = `UP: ${up.human}`;
 }
 
-// ── Polling ────────────────────────────────────────────────────────────────
+// ── Polling & Lifecycle ────────────────────────────────────────────────────
 let offline = false;
 
 async function fetchMetrics() {
