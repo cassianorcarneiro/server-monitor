@@ -72,23 +72,59 @@ def get_memory_metrics() -> dict:
 
 
 def get_disk_metrics() -> list[dict]:
+    # Dentro de um container Docker o disco raiz aparece como fstype='overlay'.
+    # Usamos all=True para que ele seja incluído, mas bloqueamos overlay em
+    # qualquer outro mountpoint (são artefatos do runtime do container).
+    SKIP_FSTYPES = {
+        "tmpfs", "devtmpfs", "devpts", "sysfs", "proc",
+        "cgroup", "cgroup2", "pstore", "securityfs", "debugfs",
+        "tracefs", "hugetlbfs", "mqueue", "nsfs", "bpf",
+        "fusectl", "fuse", "squashfs", "ramfs",
+    }
+
+    seen_devices: set[str] = set()
     disks = []
-    for part in psutil.disk_partitions(all=False):
-        if not os.path.exists(part.mountpoint):
+
+    for part in psutil.disk_partitions(all=True):
+        mp = part.mountpoint
+
+        # overlay só é válido no mountpoint raiz do container
+        if part.fstype == "overlay" and mp != "/":
             continue
+
+        # ignorar filesystems virtuais/especiais
+        if part.fstype in SKIP_FSTYPES:
+            continue
+
+        # mountpoint deve ser um diretório (bind-mounts de .so são arquivos)
+        if not os.path.isdir(mp):
+            continue
+
+        # desduplicar por device (mesmo LV montado em vários pontos)
+        dev = part.device
+        if dev in seen_devices:
+            continue
+        seen_devices.add(dev)
+
         try:
-            usage = psutil.disk_usage(part.mountpoint)
-            disks.append({
-                "device": part.device,
-                "mountpoint": part.mountpoint,
-                "fstype": part.fstype,
-                "total_gb": round(usage.total / 1e9, 2),
-                "used_gb": round(usage.used / 1e9, 2),
-                "free_gb": round(usage.free / 1e9, 2),
-                "percent": usage.percent,
-            })
-        except PermissionError:
+            usage = psutil.disk_usage(mp)
+        except (PermissionError, OSError):
             continue
+
+        # ignorar partições menores que 1 MB (artefatos de container / EFI vars)
+        if usage.total < 1_000_000:
+            continue
+
+        disks.append({
+            "device": dev,
+            "mountpoint": mp,
+            "fstype": part.fstype,
+            "total_gb": round(usage.total / 1e9, 2),
+            "used_gb": round(usage.used / 1e9, 2),
+            "free_gb": round(usage.free / 1e9, 2),
+            "percent": usage.percent,
+        })
+
     return disks
 
 
