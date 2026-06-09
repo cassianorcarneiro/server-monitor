@@ -20,6 +20,10 @@ PORT = 9090
 CORS_ORIGIN = "*"           # Restrict to your Tailscale CIDR if desired
 STATIC_DIR = Path(__file__).parent / "static"
 
+# ── Network rate state ───────────────────────────────────────────────────────
+# Guarda a última leitura para calcular taxa (KB/s) entre chamadas.
+_net_last: dict = {}
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _run(cmd: list[str]) -> str | None:
@@ -129,10 +133,26 @@ def get_disk_metrics() -> list[dict]:
 
 
 def get_network_metrics() -> dict:
+    global _net_last
     net = psutil.net_io_counters()
+    now = time.time()
+
+    if _net_last:
+        dt = max(now - _net_last["ts"], 0.001)  # evita divisão por zero
+        sent_kbps = max(round((net.bytes_sent - _net_last["sent"]) / dt / 1024, 2), 0.0)
+        recv_kbps = max(round((net.bytes_recv - _net_last["recv"]) / dt / 1024, 2), 0.0)
+    else:
+        # Primeira leitura: ainda não há intervalo para calcular taxa
+        sent_kbps = 0.0
+        recv_kbps = 0.0
+
+    _net_last = {"ts": now, "sent": net.bytes_sent, "recv": net.bytes_recv}
+
     return {
-        "bytes_sent_mb": round(net.bytes_sent / 1e6, 2),
-        "bytes_recv_mb": round(net.bytes_recv / 1e6, 2),
+        "sent_kbps": sent_kbps,
+        "recv_kbps": recv_kbps,
+        "bytes_sent_total_mb": round(net.bytes_sent / 1e6, 2),
+        "bytes_recv_total_mb": round(net.bytes_recv / 1e6, 2),
         "packets_sent": net.packets_sent,
         "packets_recv": net.packets_recv,
     }
@@ -213,7 +233,7 @@ def get_load_average() -> dict:
 async def handle_metrics(request: web.Request) -> web.Response:
     """Main metrics endpoint — called every 5 s by the dashboard."""
     payload = {
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(datetime.timezone.utc).isoformat().replace("+00:00","Z"),
         "timestamp_unix": time.time(),
         "cpu": get_cpu_metrics(),
         "memory": get_memory_metrics(),
