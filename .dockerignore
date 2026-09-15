@@ -1,0 +1,44 @@
+# Version control
+.git
+.gitignore
+.github
+
+# Python artifacts
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+.pytest_cache
+.mypy_cache
+.ruff_cache
+*.egg-info
+
+# Virtual environment — leftover from the earlier non-Docker (systemd) setup;
+# irrelevant to the image and would otherwise bloat the build context.
+venv
+.venv
+env
+ENV
+
+# Documentation not needed inside the image
+README.md
+*.md
+LICENSE
+
+# The systemd unit is for a host-level, non-Docker deployment; irrelevant
+# inside the container.
+systemd/
+
+# Design-time icon generator; not imported by the running app, and its only
+# dependency (Pillow) is not part of requirements.txt.
+generate_icons.py
+
+# Docker artifacts
+docker-compose*.yaml
+docker-compose*.yml
+Dockerfile*
+.dockerignore
+
+# Logs
+*.log

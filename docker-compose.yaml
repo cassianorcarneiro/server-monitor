@@ -1,0 +1,29 @@
+services:
+  server-monitor:
+    build: .
+    container_name: server-monitor
+    restart: unless-stopped
+
+    # ── Volumes ───────────────────────────────────────────────────────────────
+    volumes:
+      - /sys/class/hwmon:/sys/class/hwmon:ro   # generic sensors (CPU, etc.)
+
+    # ── NVIDIA GPU (requires nvidia-container-toolkit installed on the host) ──
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu, utility]
+
+    # ── Intel GPU (DRI — Arrow Lake iGPU) ─────────────────────────────────────
+    devices:
+      - /dev/dri:/dev/dri
+
+    # ── Network ───────────────────────────────────────────────────────────────
+    # host mode: the container uses the host's real interfaces (eno1, etc.)
+    # This lets it monitor the server's actual traffic, not a virtual interface.
+    # With network_mode: host the 'ports' field is unused — reach it directly at
+    # http://<host-ip>:9090
+    network_mode: host

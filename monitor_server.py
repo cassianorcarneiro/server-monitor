@@ -269,7 +269,39 @@ def create_app() -> web.Application:
     return app
 
 
+def _lower_own_priority() -> None:
+    """Requests idle CPU and I/O priority for this process: only run when the
+    machine is otherwise idle, so it never competes with a real workload.
+
+    Previously only set externally, via the systemd unit's
+    CPUSchedulingPolicy=idle / IOSchedulingClass=idle. That guarantee silently
+    disappeared for anyone running this under Docker instead, since
+    docker-compose.yaml has no equivalent setting — the container was
+    fighting for CPU and disk time on equal footing with everything else on
+    the host. Applying it here makes the guarantee intrinsic to the process
+    itself, honored the same way whether it's started by Docker, systemd, or
+    a bare `python3 monitor_server.py`.
+
+    Lowering a process's own priority is unprivileged on Linux for both of
+    these — no CAP_SYS_NICE is needed, only for raising it — so this is safe
+    to call unconditionally. Each half is still wrapped defensively in case it
+    ever runs somewhere without SCHED_IDLE or ionice support (a non-Linux OS,
+    or a restrictive sandbox); it just falls back to the default priority for
+    that half rather than crashing.
+    """
+    try:
+        os.sched_setscheduler(0, os.SCHED_IDLE, os.sched_param(0))
+    except (AttributeError, OSError) as exc:
+        print(f"[monitor] Could not set idle CPU priority ({exc}); continuing at normal priority.")
+
+    try:
+        psutil.Process().ionice(psutil.IOPRIO_CLASS_IDLE)
+    except (AttributeError, OSError, psutil.Error) as exc:
+        print(f"[monitor] Could not set idle I/O priority ({exc}); continuing at normal priority.")
+
+
 if __name__ == "__main__":
+    _lower_own_priority()
     print(f"[monitor] Starting on http://{HOST}:{PORT}")
     app = create_app()
     # Warm up cpu_percent (first call always returns 0.0)
