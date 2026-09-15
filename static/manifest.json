@@ -1,0 +1,21 @@
+{
+  "name": "Server Monitor",
+  "short_name": "Monitor",
+  "description": "Real-time hardware dashboard: CPU, RAM, GPU, disks and network.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#09090b",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

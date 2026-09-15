@@ -1,4 +1,4 @@
-# 🖥️ SYS//MONITOR
+# 🖥️ Server Monitor
 
 > Real-time hardware dashboard for Ubuntu Server — accessible from anywhere via Tailscale, built to stay out of your GPU's way.
 
@@ -114,6 +114,8 @@ Then open `http://<tailscale-ip>:9090` on any device in your Tailscale network. 
 http://<hostname>.tail-xxxx.ts.net:9090
 ```
 
+The page can be installed as an app (Chrome's "Install as app" / Android and iOS "Add to Home Screen") and will use its own icon rather than a generic one, via `static/manifest.json`.
+
 ---
 
 ## ⚙️ Configuration
@@ -163,8 +165,14 @@ Color thresholds (applied to CPU, RAM, disk, GPU, and temperatures):
 ```
 server-monitor/
 ├── monitor_server.py          # aiohttp backend + metrics collectors
+├── generate_icons.py          # Regenerates the icon set below from the same design
 ├── static/
-│   └── index.html             # Dashboard (HTML + CSS + JS, single file)
+│   ├── index.html             # Dashboard (HTML + CSS + JS, single file)
+│   ├── manifest.json          # Lets "Install as app" / "Add to Home Screen" use a real icon
+│   ├── favicon.ico            # Tab-icon fallback for browsers without SVG favicon support
+│   ├── icon-192.png
+│   ├── icon-512.png
+│   └── apple-touch-icon.png
 ├── systemd/
 │   └── server-monitor.service # systemd unit (idle priority)
 ├── requirements.txt

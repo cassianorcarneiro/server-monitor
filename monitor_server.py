@@ -10,7 +10,7 @@ import subprocess
 import time
 import os
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 from aiohttp import web
 import psutil
 
@@ -21,7 +21,7 @@ CORS_ORIGIN = "*"           # Restrict to your Tailscale CIDR if desired
 STATIC_DIR = Path(__file__).parent / "static"
 
 # ── Network rate state ───────────────────────────────────────────────────────
-# Guarda a última leitura para calcular taxa (KB/s) entre chamadas.
+# Holds the previous reading so a rate (KB/s) can be computed between calls.
 _net_last: dict = {}
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -76,9 +76,9 @@ def get_memory_metrics() -> dict:
 
 
 def get_disk_metrics() -> list[dict]:
-    # Dentro de um container Docker o disco raiz aparece como fstype='overlay'.
-    # Usamos all=True para que ele seja incluído, mas bloqueamos overlay em
-    # qualquer outro mountpoint (são artefatos do runtime do container).
+    # Inside a Docker container the root disk shows up as fstype='overlay'.
+    # all=True is used so it's included, but overlay is blocked at any other
+    # mountpoint (those are artifacts of the container runtime).
     SKIP_FSTYPES = {
         "tmpfs", "devtmpfs", "devpts", "sysfs", "proc",
         "cgroup", "cgroup2", "pstore", "securityfs", "debugfs",
@@ -92,19 +92,19 @@ def get_disk_metrics() -> list[dict]:
     for part in psutil.disk_partitions(all=True):
         mp = part.mountpoint
 
-        # overlay só é válido no mountpoint raiz do container
+        # overlay is only valid at the container's root mountpoint
         if part.fstype == "overlay" and mp != "/":
             continue
 
-        # ignorar filesystems virtuais/especiais
+        # skip virtual/special filesystems
         if part.fstype in SKIP_FSTYPES:
             continue
 
-        # mountpoint deve ser um diretório (bind-mounts de .so são arquivos)
+        # mountpoint must be a directory (bind-mounted .so files are not)
         if not os.path.isdir(mp):
             continue
 
-        # desduplicar por device (mesmo LV montado em vários pontos)
+        # de-duplicate by device (the same LV can be mounted at several points)
         dev = part.device
         if dev in seen_devices:
             continue
@@ -115,7 +115,7 @@ def get_disk_metrics() -> list[dict]:
         except (PermissionError, OSError):
             continue
 
-        # ignorar partições menores que 1 MB (artefatos de container / EFI vars)
+        # skip partitions under 1 MB (container artifacts / EFI variables)
         if usage.total < 1_000_000:
             continue
 
@@ -138,11 +138,11 @@ def get_network_metrics() -> dict:
     now = time.time()
 
     if _net_last:
-        dt = max(now - _net_last["ts"], 0.001)  # evita divisão por zero
+        dt = max(now - _net_last["ts"], 0.001)  # avoids a division by zero
         sent_kbps = max(round((net.bytes_sent - _net_last["sent"]) / dt / 1024, 2), 0.0)
         recv_kbps = max(round((net.bytes_recv - _net_last["recv"]) / dt / 1024, 2), 0.0)
     else:
-        # Primeira leitura: ainda não há intervalo para calcular taxa
+        # First reading: there is no interval yet to compute a rate from
         sent_kbps = 0.0
         recv_kbps = 0.0
 
@@ -233,7 +233,7 @@ def get_load_average() -> dict:
 async def handle_metrics(request: web.Request) -> web.Response:
     """Main metrics endpoint — called every 5 s by the dashboard."""
     payload = {
-        "timestamp": datetime.now(datetime.timezone.utc).isoformat().replace("+00:00","Z"),
+        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "timestamp_unix": time.time(),
         "cpu": get_cpu_metrics(),
         "memory": get_memory_metrics(),

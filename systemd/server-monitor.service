@@ -1,7 +1,7 @@
 [Unit]
 Description=Server Hardware Monitor Dashboard
 After=network.target
-Documentation=https://github.com/yourname/server-monitor
+Documentation=https://github.com/<your-username>/server-monitor
 
 [Service]
 # ── Change these two paths to match your setup ────────────────────────────
@@ -21,11 +21,17 @@ SyslogIdentifier=server-monitor
 # ── Hardening (optional but recommended) ─────────────────────────────────
 # Run as a dedicated user. Create with:
 #   sudo useradd -r -s /bin/false monitor
-# Then uncomment the two lines below:
+# Then uncomment the two lines below, and the SupplementaryGroups line further
+# down: sensor and GPU device files are typically group-owned (check with
+# `ls -la /dev/nvidia* /sys/class/hwmon/*/temp*_input`), and a non-root user
+# needs those groups to read them.
 # User=monitor
 # Group=monitor
 
-# Allow reading hardware sensors
+# Empty by default because it only matters once User=/Group= above are
+# enabled — running as root (the default here) already has access to
+# everything. Fill in once you enable the dedicated user, e.g.:
+#   SupplementaryGroups=video render
 SupplementaryGroups=
 
 # CPU scheduler — don't let the monitor compete with your RL jobs

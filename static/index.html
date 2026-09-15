@@ -3,8 +3,17 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>SYS//MONITOR</title>
+<title>Server Monitor</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2309090b'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%2322d87a' stroke-width='1.5'/%3E%3Cline x1='8' y1='22' x2='8' y2='16' stroke='%2322d87a' stroke-width='2' stroke-linecap='round'/%3E%3Cline x1='12' y1='22' x2='12' y2='10' stroke='%2322d87a' stroke-width='2' stroke-linecap='round'/%3E%3Cline x1='16' y1='22' x2='16' y2='14' stroke='%2322d87a' stroke-width='2' stroke-linecap='round'/%3E%3Cline x1='20' y1='22' x2='20' y2='8' stroke='%2322d87a' stroke-width='2' stroke-linecap='round'/%3E%3Cline x1='24' y1='22' x2='24' y2='13' stroke='%2322d87a' stroke-width='2' stroke-linecap='round'/%3E%3Cline x1='6' y1='22' x2='26' y2='22' stroke='%232a2a32' stroke-width='1'/%3E%3C%2Fsvg%3E" />
+<!-- Fallback for browsers that don't support SVG data-URI favicons (old
+     Safari, mainly). Same rendering both come from generate_icons.py. -->
+<link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+<!-- The two icons above are for the browser tab. What's missing for
+     "Install as app" / "Add to Home Screen" is this manifest and the
+     matching PNGs — that flow reads these, not the tab favicon. -->
+<link rel="manifest" href="/static/manifest.json" />
+<link rel="apple-touch-icon" href="/static/apple-touch-icon.png" />
+<meta name="theme-color" content="#09090b" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@300;400;500;700&display=swap" rel="stylesheet" />
@@ -740,8 +749,8 @@ canvas.sparkline {
   </div>
 
   <!-- ── Network I/O ───────────────────────────────────────────────────────
-       Sent/Recv mostram taxa em KB/s (calculada no backend entre polls).
-       Total acumulado fica disponível via tooltip nos valores.
+       Sent/Recv show the rate in KB/s (computed backend-side between polls).
+       The cumulative total is available via a tooltip on the values.
   ──────────────────────────────────────────────────────────────────────── -->
   <div class="panel" id="panel-net">
     <div class="panel-header">
@@ -803,12 +812,12 @@ canvas.sparkline {
 
 <script>
 /* ═══════════════════════════════════════════════════════════════════════════
-   SYS//MONITOR — Dashboard Runtime
+   Server Monitor — Dashboard Runtime
    ═══════════════════════════════════════════════════════════════════════════ */
 
 // ── Configuration ──────────────────────────────────────────────────────────
-const POLL_MS      = 2000;
-const HISTORY_MAX  = 60;            // 60 amostras ≈ 2 min com poll de 2s
+const POLL_MS      = 5000;
+const HISTORY_MAX  = 60;            // 60 samples * 5s poll = 5 min of history
 const API_BASE     = '';
 const METRICS_URL  = `${API_BASE}/metrics`;
 
@@ -831,7 +840,7 @@ const fmt1 = v => v != null ? Number(v).toFixed(1) : '—';
 const fmt0 = v => v != null ? Math.round(v)         : '—';
 const fmtGB = v => v != null ? Number(v).toFixed(1) + ' GB' : '—';
 
-// Formata KB/s com upgrade automático para MB/s acima de 1024 KB/s
+// Formats KB/s, auto-upgrading to MB/s above 1024 KB/s
 function fmtRate(kbps) {
   if (kbps == null) return { val: '—', unit: 'KB/s' };
   if (kbps >= 1024) return { val: (kbps / 1024).toFixed(1), unit: 'MB/s' };
@@ -1139,15 +1148,13 @@ function renderDisks(disks) {
 }
 
 function renderNetwork(net) {
-  // Usa sent_kbps / recv_kbps (taxa calculada no backend).
-  // Fallback para os campos antigos caso o backend ainda não tenha sido atualizado.
-  const sentKbps = net.sent_kbps ?? net.bytes_sent_mb ?? 0;
-  const recvKbps = net.recv_kbps ?? net.bytes_recv_mb ?? 0;
+  const sentKbps = net.sent_kbps ?? 0;
+  const recvKbps = net.recv_kbps ?? 0;
 
   push(history.netSent, sentKbps);
   push(history.netRecv, recvKbps);
 
-  // Formata com upgrade automático KB/s → MB/s
+  // Auto-upgrades the unit from KB/s to MB/s once the rate is high enough.
   const sent = fmtRate(sentKbps);
   const recv = fmtRate(recvKbps);
 
@@ -1155,6 +1162,15 @@ function renderNetwork(net) {
   $('net-sent-unit').textContent = sent.unit;
   $('net-recv').textContent      = recv.val;
   $('net-recv-unit').textContent = recv.unit;
+
+  // The cumulative counters (since boot) back the tooltip promised in the
+  // comment above the panel markup; they weren't wired up before.
+  if (net.bytes_sent_total_mb != null) {
+    $('net-sent').title = `${net.bytes_sent_total_mb.toLocaleString()} MB sent since boot`;
+  }
+  if (net.bytes_recv_total_mb != null) {
+    $('net-recv').title = `${net.bytes_recv_total_mb.toLocaleString()} MB received since boot`;
+  }
 
   $('net-pkt-s').textContent = net.packets_sent?.toLocaleString() ?? '—';
   $('net-pkt-r').textContent = net.packets_recv?.toLocaleString() ?? '—';
