@@ -3,7 +3,7 @@
   "short_name": "Monitor",
   "description": "Real-time hardware dashboard: CPU, RAM, GPU, disks and network.",
   "start_url": "/",
-  "id": "/",
+  "id": "/server-monitor",
   "display": "standalone",
   "background_color": "#09090b",
   "theme_color": "#09090b",
